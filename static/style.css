@@ -1,0 +1,49 @@
+div {
+    border: 2px solid #ccc;
+    border-radius: 4px;
+    padding: 0.8em;
+    background: lightgoldenrodyellow;
+}
+
+ul {
+    border-left: 2px solid grey;
+}
+
+.selected
+{
+    font-weight: bold;
+    background-color: lightgreen;
+}
+
+
+div.groupsAndValues {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+}
+
+.groupsAndValues div {
+    border: 0;
+    border-radius: 0;
+    padding: 0;
+}
+
+.groupsAndValues .group div.values {
+    margin-left: 1em;
+}
+
+.groupsAndValues .group h2 {
+    border-bottom: 2px solid grey;
+}
+
+.groupsAndValues .group li {
+    list-style-type: square;
+}
+
+.groupsAndValues .group ul {
+    border: 0px;
+}
+
+.groupsAndValues div.group {
+    margin-bottom: 1em;
+}

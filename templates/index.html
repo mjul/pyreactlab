@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Py React Lab</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <script src="{{ url_for('static', filename='js/lib/react-0.11.2.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/lib/JSXTransformer-0.11.2.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/reactlabdom.js') }}"></script>
+    <script type="text/jsx" src="{{ url_for('static', filename='js/reactlabjsx.js') }}"></script>
+ </head>
+<body>
+    <h1>Python React Lab</h1>
+
+    <h2>React DOM backed</h2>
+    <div id="domlab"></div>
+
+    <h2>React JSX backed</h2>
+    <div id="jsxlab"></div>
+</body>
+</html>
+
