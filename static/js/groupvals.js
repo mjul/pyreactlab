@@ -5,50 +5,124 @@
 "use strict";
 
 
-var Value = React.createClass({
-    displayName: 'Value',
-    handleDeleteValue: function(evt) {
-        evt.preventDefault();
-        this.props.onValueDeleted(this.props.data);
+var ListItem = React.createClass({
+    displayName: 'ListItem',
+
+    propTypes: {
+        index: React.PropTypes.number.isRequired,
+        data: React.PropTypes.object.isRequired,
+        onListItemDeleted: React.PropTypes.func
     },
+
+    handleDelete: function (evt) {
+        evt.preventDefault();
+        if (this.props.onListItemDeleted) {
+            this.props.onListItemDeleted(this.props.index, this.props.data)
+        }
+    },
+
     render: function () {
-        return React.DOM.li({className: 'value'},
-            this.props.data.text,
-            React.DOM.button({onClick: this.handleDeleteValue, className: 'delete'}, "X"));
+        return React.DOM.li({className: 'listItem'},
+            React.DOM.div({className: 'listItemChildren'}, this.props.children),
+            React.DOM.div({className: 'listItemControls'},
+                React.DOM.button({className: 'delete', onClick: this.handleDelete}, 'Delete')));
     }
 });
 
+var List = React.createClass({
+    displayName: 'List',
+
+    propTypes: {
+        data: React.PropTypes.array.isRequired,
+        onListItemDeleted: React.PropTypes.func
+    },
+
+    handleListItemDeleted: function (itemNumber, itemData) {
+        var newItems = React.addons.update(this.props.data, {$splice: [[itemNumber,1]]});
+        if (this.props.onListItemDeleted) {
+            this.props.onListItemDeleted(itemNumber, newItems, itemData);
+        }
+    },
+
+    render: function () {
+        var deletedCallback = this.handleListItemDeleted;
+        var dataItems = this.props.data;
+        var items = React.Children.map(this.props.children, function (c, index) {
+            var d = dataItems[index];
+            return ListItem({key: 'LI_key_' + index, onListItemDeleted: deletedCallback,
+                             index: index, data: d}, c);
+        });
+        return React.DOM.ul({className: 'list', data: this.props.data},
+            items
+        );
+    }
+});
+
+
+
+var Value = React.createClass({
+    displayName: 'Value',
+    propTypes: {
+        data: React.PropTypes.shape({text: React.PropTypes.string.isRequired}).isRequired,
+        onListItemDeleted: React.PropTypes.func
+    },
+    render: function () {
+        return React.DOM.div({className: 'value'}, this.props.data.text);
+    }
+});
+
+
 var Group = React.createClass({
     displayName: 'Group',
+
+    propTypes: {
+        index: React.PropTypes.number.isRequired,
+        data: React.PropTypes.shape({
+            groupId: React.PropTypes.number.isRequired,
+            name: React.PropTypes.string.isRequired,
+            values: React.PropTypes.array.isRequired
+        }).isRequired,
+        onGroupValueDeleted: React.PropTypes.func,
+        onGroupValueAdded: React.PropTypes.func
+    },
+
     getInitialState: function () {
         return {newValue: ''};
     },
     handleChange: function (evt) {
-        this.setState({newValue: evt.target.value});
+        var newValue = evt.target.value;
+        this.setState({newValue: newValue});
     },
     handleAddValue: function (evt) {
         evt.preventDefault();
         var nextNewValue = '';
-        this.setState({newValue: nextNewValue});
-        this.props.onGroupValueAdded(this.props.data, {text: this.state.newValue});
+        var group = this.props.data;
+        var newValue = {text: this.state.newValue};
+        var newGroup = React.addons.update(group, {values: {$push: [newValue]}});
+        this.state.newValue = '';
+        this.props.onGroupValueAdded(this.props.index, newGroup, newValue);
     },
-    handleValueDeleted: function(value) {
-        this.props.onGroupValueDeleted(this.props.data, value);
+    handleValueDeleted: function (valueIndex, newValues, deletedValue) {
+        var newGroup = React.addons.update(this.props.data, {values: {$set: newValues}});
+        if (this.props.onGroupValueDeleted) {
+            this.props.onGroupValueDeleted(this.props.index, newGroup, deletedValue);
+        }
     },
     render: function () {
         var deletedCallback = this.handleValueDeleted;
-        var values = this.props.data.values.map(function (v, index) {
-            return Value({data: v, key: "value_" + v.valueId, onValueDeleted: deletedCallback});
+        var dataValues = this.props.data.values;
+        var values = dataValues.map(function (v, index) {
+            return Value({data: v});
         });
         return React.DOM.div({className: 'group'},
             React.DOM.h2(null, this.props.data.name),
             React.DOM.div({className: 'values'},
-                React.DOM.ul(null, values),
+                List({onListItemDeleted: deletedCallback, data: dataValues}, values),
                 React.DOM.div(null,
                     React.DOM.form({onSubmit: this.handleAddValue},
                         React.DOM.input({onChange: this.handleChange, value: this.state.newValue}),
-                        React.DOM.button(null, "Add Value")))
-                ));
+                        React.DOM.button({disabled: (this.state.newValue.length == 0)}, "Add Value")))
+            ));
     }
 });
 
@@ -64,9 +138,9 @@ var GroupsAndValues = React.createClass({
     handleChange: function (evt) {
         this.setState({newGroup: evt.target.value});
     },
-    handleGroupValueAdded: function (group, newValue) {
+
+    handleGroupValueAdded: function (index, newGroup, newValue) {
         var groups = this.state.data;
-        var groupPos = groups.indexOf(group);
         var maxValueId = -1;
         groups.forEach(function (group) {
             var vals = group.values.map(function (v) {
@@ -75,45 +149,46 @@ var GroupsAndValues = React.createClass({
             var maxInGroup = Math.max.apply(Math, vals);
             maxValueId = Math.max(maxValueId, maxInGroup);
         });
-        newValue.valueId = maxValueId + 1;
-        var group = groups[groupPos];
-        var newGroup = React.addons.update(group, {values: {$push: [newValue]}});
-        var newGroups = React.addons.update(groups, {$splice: [[groupPos,1,newGroup]]});
+        var valueIndex = newGroup.values.indexOf(newValue);
+        newValue.valueId = maxValueId;
+        newGroup[valueIndex] = newValue;
+        var newGroups = React.addons.update(groups, {$splice: [[index, 1, newGroup]]});
         this.setState({data: newGroups});
     },
-    handleGroupValueDeleted: function (group, valueToDelete) {
+
+    handleGroupValueDeleted: function (index, newGroup, deletedValue) {
         var groups = this.state.data;
-        var valuePos = group.values.indexOf(valueToDelete);
-        var groupPos = groups.indexOf(group);
-        var newGroup = React.addons.update(group, {values: {$splice: [[valuePos, 1]]}});
-        var newGroups = React.addons.update(groups, {$splice: [[groupPos, 1, newGroup]]});
+        var newGroups = React.addons.update(groups, {$splice: [[index, 1, newGroup]]});
         this.setState({data: newGroups});
     },
+
     handleAddGroup: function (evt) {
         evt.preventDefault();
         var groups = this.state.data;
-        var maxGroupId = groups.length + 1;
-        //var maxGroupId = Math.max.apply(groups.map(function (g) { return g.groupId; }));
+        var maxGroupId = Math.max.apply(groups.map(function (g) { return g.groupId; }));
         var newGroup = {groupId: maxGroupId + 1, name: this.state.newGroup, values: []};
         this.state.newGroup = '';
         this.setState({data: groups.concat([newGroup])});
     },
+
     render: function () {
         var groupValueCallback = this.handleGroupValueAdded;
         var groupValueDeletedCallback = this.handleGroupValueDeleted;
         var groupCallback = this.handleGroupAdded;
         var items = this.state.data.map(function (group, index) {
             return Group(
-                {data: group, key: "group_" + group.groupId,
-                    onGroupValueAdded: groupValueCallback,
-                    onGroupValueDeleted: groupValueDeletedCallback,
-                    onGroupAdded: groupCallback});
+                {data: group,
+                 index: index,
+                 key: "group_" + group.groupId,
+                 onGroupValueAdded: groupValueCallback,
+                 onGroupValueDeleted: groupValueDeletedCallback,
+                 onGroupAdded: groupCallback});
         });
         return React.DOM.div({className: 'groupsAndValues'}, items,
             React.DOM.div(null,
                 React.DOM.form({onSubmit: this.handleAddGroup},
                     React.DOM.input({onChange: this.handleChange, value: this.state.newGroup}),
-                    React.DOM.button(null, "Add Group")
+                    React.DOM.button({disabled: (this.state.newGroup.length == 0)}, "Add Group")
                 )
             )
         );
