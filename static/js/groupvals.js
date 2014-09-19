@@ -7,8 +7,14 @@
 
 var Value = React.createClass({
     displayName: 'Value',
+    handleDeleteValue: function(evt) {
+        evt.preventDefault();
+        this.props.onValueDeleted(this.props.data);
+    },
     render: function () {
-        return React.DOM.li({className: 'value'}, this.props.data.text);
+        return React.DOM.li({className: 'value'},
+            this.props.data.text,
+            React.DOM.button({onClick: this.handleDeleteValue, className: 'delete'}, "X"));
     }
 });
 
@@ -26,9 +32,13 @@ var Group = React.createClass({
         this.setState({newValue: nextNewValue});
         this.props.onGroupValueAdded(this.props.data, {text: this.state.newValue});
     },
+    handleValueDeleted: function(value) {
+        this.props.onGroupValueDeleted(this.props.data, value);
+    },
     render: function () {
+        var deletedCallback = this.handleValueDeleted;
         var values = this.props.data.values.map(function (v, index) {
-            return Value({data: v, key: "value_" + v.valueId});
+            return Value({data: v, key: "value_" + v.valueId, onValueDeleted: deletedCallback});
         });
         return React.DOM.div({className: 'group'},
             React.DOM.h2(null, this.props.data.name),
@@ -71,6 +81,14 @@ var GroupsAndValues = React.createClass({
         var newGroups = React.addons.update(groups, {$splice: [[groupPos,1,newGroup]]});
         this.setState({data: newGroups});
     },
+    handleGroupValueDeleted: function (group, valueToDelete) {
+        var groups = this.state.data;
+        var valuePos = group.values.indexOf(valueToDelete);
+        var groupPos = groups.indexOf(group);
+        var newGroup = React.addons.update(group, {values: {$splice: [[valuePos, 1]]}});
+        var newGroups = React.addons.update(groups, {$splice: [[groupPos, 1, newGroup]]});
+        this.setState({data: newGroups});
+    },
     handleAddGroup: function (evt) {
         evt.preventDefault();
         var groups = this.state.data;
@@ -82,11 +100,13 @@ var GroupsAndValues = React.createClass({
     },
     render: function () {
         var groupValueCallback = this.handleGroupValueAdded;
+        var groupValueDeletedCallback = this.handleGroupValueDeleted;
         var groupCallback = this.handleGroupAdded;
         var items = this.state.data.map(function (group, index) {
             return Group(
                 {data: group, key: "group_" + group.groupId,
                     onGroupValueAdded: groupValueCallback,
+                    onGroupValueDeleted: groupValueDeletedCallback,
                     onGroupAdded: groupCallback});
         });
         return React.DOM.div({className: 'groupsAndValues'}, items,
