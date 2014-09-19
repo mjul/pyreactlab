@@ -54,7 +54,7 @@ var List = React.createClass({
             return ListItem({key: 'LI_key_' + index, onListItemDeleted: deletedCallback,
                 index: index, data: d}, c);
         });
-        return React.DOM.ul({className: 'list', data: this.props.data},
+        return React.DOM.ul({className: 'list'},
             items
         );
     }
@@ -113,6 +113,7 @@ var Group = React.createClass({
         onGroupValueDeleted: React.PropTypes.func,
         onGroupValueAdded: React.PropTypes.func
     },
+
     handleValueAdded: function (text) {
         var group = this.props.data;
         var newValue = {text: text};
@@ -126,6 +127,7 @@ var Group = React.createClass({
             this.props.onGroupValueDeleted(this.props.index, newGroup, deletedValue);
         }
     },
+
     render: function () {
         var deletedCallback = this.handleValueDeleted;
         var addedCallback = this.handleValueAdded;
@@ -192,11 +194,17 @@ var GroupsAndValues = React.createClass({
         this.setState({data: newGroups});
     },
 
+    handleGroupDeleted: function (groupIndex, newGroups, deletedGroup) {
+        this.setState({data: newGroups});
+    },
+
     render: function () {
         var groupValueCallback = this.handleGroupValueAdded;
         var groupValueDeletedCallback = this.handleGroupValueDeleted;
         var addGroupCallback = this.handleAddGroup;
-        var items = this.state.data.map(function (group, index) {
+        var groupDeletedCallback = this.handleGroupDeleted;
+        var groups = this.state.data;
+        var items = groups.map(function (group, index) {
             return Group(
                 {data: group,
                     index: index,
@@ -205,7 +213,7 @@ var GroupsAndValues = React.createClass({
                     onGroupValueDeleted: groupValueDeletedCallback});
         });
         return React.DOM.div({className: 'groupsAndValues'},
-            items,
+            List({onListItemDeleted: groupDeletedCallback, data: groups}, items),
             ListItemAdder({onListItemAdded: addGroupCallback})
         );
     }
