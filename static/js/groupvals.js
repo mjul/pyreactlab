@@ -165,10 +165,11 @@ var GroupsAndValues = React.createClass({
     handleAddGroup: function (evt) {
         evt.preventDefault();
         var groups = this.state.data;
-        var maxGroupId = Math.max.apply(groups.map(function (g) { return g.groupId; }));
+        var maxGroupId = Math.max.apply(null, groups.map(function (g) { return g.groupId; }));
         var newGroup = {groupId: maxGroupId + 1, name: this.state.newGroup, values: []};
         this.state.newGroup = '';
-        this.setState({data: groups.concat([newGroup])});
+        var newGroups = React.addons.update(groups, {$push: [newGroup]});
+        this.setState({data: newGroups});
     },
 
     render: function () {
@@ -181,15 +182,13 @@ var GroupsAndValues = React.createClass({
                  index: index,
                  key: "group_" + group.groupId,
                  onGroupValueAdded: groupValueCallback,
-                 onGroupValueDeleted: groupValueDeletedCallback,
-                 onGroupAdded: groupCallback});
+                 onGroupValueDeleted: groupValueDeletedCallback});
         });
-        return React.DOM.div({className: 'groupsAndValues'}, items,
+        return React.DOM.div({className: 'groupsAndValues'},
+            items,
             React.DOM.div(null,
-                React.DOM.form({onSubmit: this.handleAddGroup},
-                    React.DOM.input({onChange: this.handleChange, value: this.state.newGroup}),
-                    React.DOM.button({disabled: (this.state.newGroup.length == 0)}, "Add Group")
-                )
+                React.DOM.input({onChange: this.handleChange, value: this.state.newGroup}),
+                React.DOM.button({onClick: this.handleAddGroup, disabled: (this.state.newGroup.length == 0)}, "Add Group")
             )
         );
     }
