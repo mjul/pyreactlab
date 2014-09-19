@@ -55,9 +55,10 @@ var GroupsAndValues = React.createClass({
         this.setState({newGroup: evt.target.value});
     },
     handleGroupValueAdded: function (group, newValue) {
-        var groupPos = this.state.data.indexOf(group);
+        var groups = this.state.data;
+        var groupPos = groups.indexOf(group);
         var maxValueId = -1;
-        this.state.data.forEach(function (group) {
+        groups.forEach(function (group) {
             var vals = group.values.map(function (v) {
                 return v.valueId;
             });
@@ -65,9 +66,10 @@ var GroupsAndValues = React.createClass({
             maxValueId = Math.max(maxValueId, maxInGroup);
         });
         newValue.valueId = maxValueId + 1;
-        var newGroup = this.state.data[groupPos];
-        newGroup.values = newGroup.values.concat([newValue]);
-        this.setState({data: this.state.data});
+        var group = groups[groupPos];
+        var newGroup = React.addons.update(group, {values: {$push: [newValue]}});
+        var newGroups = React.addons.update(groups, {$splice: [[groupPos,1,newGroup]]});
+        this.setState({data: newGroups});
     },
     handleAddGroup: function (evt) {
         evt.preventDefault();
