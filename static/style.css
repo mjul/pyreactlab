@@ -28,22 +28,32 @@ div.groupsAndValues {
     padding: 0;
 }
 
-.groupsAndValues .group div.values {
-    margin-left: 1em;
+.groupsAndValues ul {
+    padding: 0;
+    border: 0;
+}
+
+.groupsAndValues .listItem {
+    display: table-row;
+}
+
+.groupsAndValues .listItemChildren, .listItemControls {
+    display: table-cell;
+}
+
+.groupsAndValues .listItemChildren {
+    min-width: 25em;
+}
+
+.groupsAndValues .listItemControls {
+    padding-left: 1em;
 }
 
 .groupsAndValues .group h2 {
     border-bottom: 2px solid grey;
 }
 
-.groupsAndValues .group li {
-    list-style-type: square;
+.groupsAndValues .group div.values {
+    margin-left: 1em;
 }
 
-.groupsAndValues .group ul {
-    border: 0px;
-}
-
-.groupsAndValues div.group {
-    margin-bottom: 1em;
-}
