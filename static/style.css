@@ -51,9 +51,26 @@ div.groupsAndValues {
 
 .groupsAndValues .group h2 {
     border-bottom: 2px solid grey;
+    font-family: 'Arial', serif;
+    font-style: italic;
 }
 
 .groupsAndValues .group div.values {
     margin-left: 1em;
+}
+
+.groupsAndValues .listItemAdder input, button {
+    font-size: larger;
+    font-family: 'Arial', serif;
+    font-style: italic;
+}
+
+.groupsAndValues .group {
+    font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+    font-style: normal;
+}
+.groupsAndValues .group .listItemAdder input, button {
+    font-size: smaller;
+    font-style: normal;
 }
 
