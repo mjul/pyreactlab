@@ -11,7 +11,9 @@ var ListItem = React.createClass({
     propTypes: {
         index: React.PropTypes.number.isRequired,
         data: React.PropTypes.object.isRequired,
-        onListItemDeleted: React.PropTypes.func
+        onListItemDeleted: React.PropTypes.func,
+        onListItemUpped: React.PropTypes.func,
+        onListItemDowned: React.PropTypes.func
     },
 
     handleDelete: function (evt) {
@@ -21,11 +23,32 @@ var ListItem = React.createClass({
         }
     },
 
+    handleUp: function (evt) {
+        evt.preventDefault();
+        if (this.props.onListItemUpped) {
+            this.props.onListItemUpped(this.props.index, this.props.data);
+        }
+    },
+
+    handleDown: function (evt) {
+        evt.preventDefault();
+        if (this.props.onListItemDowned) {
+            this.props.onListItemDowned(this.props.index, this.props.data);
+        }
+    },
+
+
     render: function () {
+        var onUp = this.handleUp;
+        var onDown = this.handleDown;
+        var onDelete = this.handleDelete;
         return React.DOM.li({className: 'listItem'},
             React.DOM.div({className: 'listItemChildren'}, this.props.children),
             React.DOM.div({className: 'listItemControls'},
-                React.DOM.button({className: 'delete', onClick: this.handleDelete}, 'Delete')));
+                React.DOM.button({className: 'moveUp', onClick: onUp}, 'Up'),
+                React.DOM.button({className: 'moveUp', onClick: onDown}, 'Down'),
+                React.DOM.button({className: 'delete', onClick: onDelete}, 'Delete')
+            ));
     }
 });
 
@@ -46,12 +69,29 @@ var List = React.createClass({
         }
     },
 
+    handleListItemsExchanged: function (itemNumber, newItemNumber, itemData) {
+        var listLength = this.props.data.length;
+        var isInList = function(pos) { return (pos >= 0) && (pos < listLength);}
+        if ((itemNumber != newItemNumber) && isInList(itemNumber) && isInList(newItemNumber)) {
+            var targetItem = this.props.data[newItemNumber];
+            var targetMoved = React.addons.update(this.props.data, {$splice: [[itemNumber, 1, targetItem]]});
+            var reorderedItems = React.addons.update(targetMoved, {$splice: [[newItemNumber, 1, itemData]]});
+            if (this.props.onListItemMoved) {
+                this.props.onListItemMoved(itemNumber, reorderedItems, itemData);
+            }
+        }
+    },
+
     render: function () {
         var deletedCallback = this.handleListItemDeleted;
+        var moveCallback = this.handleListItemsExchanged;
         var dataItems = this.props.data;
         var items = React.Children.map(this.props.children, function (c, index) {
             var d = dataItems[index];
-            return ListItem({key: 'LI_key_' + index, onListItemDeleted: deletedCallback,
+            return ListItem({key: 'LI_key_' + index,
+                onListItemDeleted: deletedCallback,
+                onListItemUpped: function(itemPos, item) { return moveCallback(itemPos, itemPos-1, item); },
+                onListItemDowned: function(itemPos, item) { return moveCallback(itemPos, itemPos+1, item); },
                 index: index, data: d}, c);
         });
         return React.DOM.ul({className: 'list'},
@@ -65,7 +105,7 @@ var Value = React.createClass({
     displayName: 'Value',
     propTypes: {
         data: React.PropTypes.shape({text: React.PropTypes.string.isRequired}).isRequired,
-        onListItemDeleted: React.PropTypes.func
+        onListItemDeleted: React.PropTypes.func,
     },
     render: function () {
         return React.DOM.div({className: 'value'}, this.props.data.text);
@@ -111,7 +151,8 @@ var Group = React.createClass({
             values: React.PropTypes.array.isRequired
         }).isRequired,
         onGroupValueDeleted: React.PropTypes.func,
-        onGroupValueAdded: React.PropTypes.func
+        onGroupValueAdded: React.PropTypes.func,
+        onGroupValueMoved: React.PropTypes.func
     },
 
     handleValueAdded: function (text) {
@@ -128,9 +169,17 @@ var Group = React.createClass({
         }
     },
 
+    handleValueMoved: function(valueIndex, newValues, movedItem) {
+        var newGroup = React.addons.update(this.props.data, {values: {$set: newValues}});
+        if (this.props.onGroupValueMoved) {
+            this.props.onGroupValueMoved(this.props.index, newGroup);
+        }
+    },
+
     render: function () {
         var deletedCallback = this.handleValueDeleted;
         var addedCallback = this.handleValueAdded;
+        var movedCallback = this.handleValueMoved;
         var dataValues = this.props.data.values;
         var values = dataValues.map(function (v, index) {
             return Value({data: v, key: "value_" + index});
@@ -138,7 +187,9 @@ var Group = React.createClass({
         return React.DOM.div({className: 'group'},
             React.DOM.h2(null, this.props.data.name),
             React.DOM.div({className: 'values'},
-                List({onListItemDeleted: deletedCallback, data: dataValues}, values),
+                List({onListItemDeleted: deletedCallback,
+                    onListItemMoved: movedCallback,
+                    data: dataValues}, values),
                 ListItemAdder({onListItemAdded: addedCallback})
             ));
     }
@@ -184,6 +235,12 @@ var GroupsAndValues = React.createClass({
         this.setState({data: newGroups});
     },
 
+    handleGroupValueMoved: function (index, newGroup) {
+        var groups = this.state.data;
+        var newGroups = React.addons.update(groups, {$splice: [[index, 1, newGroup] ]});
+        this.setState({data: newGroups});
+    },
+
     handleAddGroup: function (name) {
         var groups = this.state.data;
         var maxGroupId = Math.max.apply(null, groups.map(function (g) {
@@ -198,11 +255,17 @@ var GroupsAndValues = React.createClass({
         this.setState({data: newGroups});
     },
 
+    handleGroupMoved: function (groupIndex, newGroups, movedGroup) {
+        this.setState({data: newGroups});
+    },
+
     render: function () {
         var groupValueCallback = this.handleGroupValueAdded;
         var groupValueDeletedCallback = this.handleGroupValueDeleted;
+        var groupValueMovedCallback = this.handleGroupValueMoved;
         var addGroupCallback = this.handleAddGroup;
         var groupDeletedCallback = this.handleGroupDeleted;
+        var groupMovedCallback = this.handleGroupMoved;
         var groups = this.state.data;
         var items = groups.map(function (group, index) {
             return Group(
@@ -210,10 +273,13 @@ var GroupsAndValues = React.createClass({
                     index: index,
                     key: "group_" + group.groupId,
                     onGroupValueAdded: groupValueCallback,
+                    onGroupValueMoved: groupValueMovedCallback,
                     onGroupValueDeleted: groupValueDeletedCallback});
         });
         return React.DOM.div({className: 'groupsAndValues'},
-            List({onListItemDeleted: groupDeletedCallback, data: groups}, items),
+            List({data: groups,
+                onListItemDeleted: groupDeletedCallback,
+                onListItemMoved: groupMovedCallback}, items),
             ListItemAdder({onListItemAdded: addGroupCallback})
         );
     }
