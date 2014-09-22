@@ -4,8 +4,9 @@
 
 "use strict";
 
+var GroupVals = GroupVals || {};
 
-var ListItem = React.createClass({
+GroupVals.ListItem = React.createClass({
     displayName: 'ListItem',
 
     propTypes: {
@@ -37,7 +38,6 @@ var ListItem = React.createClass({
         }
     },
 
-
     render: function () {
         var onUp = this.handleUp;
         var onDown = this.handleDown;
@@ -52,7 +52,8 @@ var ListItem = React.createClass({
     }
 });
 
-var List = React.createClass({
+
+GroupVals.List = React.createClass({
     displayName: 'List',
 
     propTypes: {
@@ -71,11 +72,17 @@ var List = React.createClass({
 
     handleListItemsExchanged: function (itemNumber, newItemNumber, itemData) {
         var listLength = this.props.data.length;
-        var isInList = function(pos) { return (pos >= 0) && (pos < listLength);}
+        var isInList = function (pos) {
+            return (pos >= 0) && (pos < listLength);
+        }
         if ((itemNumber != newItemNumber) && isInList(itemNumber) && isInList(newItemNumber)) {
             var targetItem = this.props.data[newItemNumber];
-            var targetMoved = React.addons.update(this.props.data, {$splice: [[itemNumber, 1, targetItem]]});
-            var reorderedItems = React.addons.update(targetMoved, {$splice: [[newItemNumber, 1, itemData]]});
+            var targetMoved = React.addons.update(this.props.data, {$splice: [
+                [itemNumber, 1, targetItem]
+            ]});
+            var reorderedItems = React.addons.update(targetMoved, {$splice: [
+                [newItemNumber, 1, itemData]
+            ]});
             if (this.props.onListItemMoved) {
                 this.props.onListItemMoved(itemNumber, reorderedItems, itemData);
             }
@@ -88,10 +95,14 @@ var List = React.createClass({
         var dataItems = this.props.data;
         var items = React.Children.map(this.props.children, function (c, index) {
             var d = dataItems[index];
-            return ListItem({key: 'LI_key_' + index,
+            return GroupVals.ListItem({key: 'LI_key_' + index,
                 onListItemDeleted: deletedCallback,
-                onListItemUpped: function(itemPos, item) { return moveCallback(itemPos, itemPos-1, item); },
-                onListItemDowned: function(itemPos, item) { return moveCallback(itemPos, itemPos+1, item); },
+                onListItemUpped: function (itemPos, item) {
+                    return moveCallback(itemPos, itemPos - 1, item);
+                },
+                onListItemDowned: function (itemPos, item) {
+                    return moveCallback(itemPos, itemPos + 1, item);
+                },
                 index: index, data: d}, c);
         });
         return React.DOM.ul({className: 'list'},
@@ -101,7 +112,7 @@ var List = React.createClass({
 });
 
 
-var Value = React.createClass({
+GroupVals.Value = React.createClass({
     displayName: 'Value',
     propTypes: {
         data: React.PropTypes.shape({text: React.PropTypes.string.isRequired}).isRequired,
@@ -113,7 +124,7 @@ var Value = React.createClass({
 });
 
 
-var ListItemAdder = React.createClass({
+GroupVals.ListItemAdder = React.createClass({
     displayName: 'ListItemAdder',
     propTypes: {
         onListItemAdded: React.PropTypes.func.isRequired
@@ -140,7 +151,7 @@ var ListItemAdder = React.createClass({
     }
 });
 
-var Group = React.createClass({
+GroupVals.Group = React.createClass({
     displayName: 'Group',
 
     propTypes: {
@@ -169,7 +180,7 @@ var Group = React.createClass({
         }
     },
 
-    handleValueMoved: function(valueIndex, newValues, movedItem) {
+    handleValueMoved: function (valueIndex, newValues, movedItem) {
         var newGroup = React.addons.update(this.props.data, {values: {$set: newValues}});
         if (this.props.onGroupValueMoved) {
             this.props.onGroupValueMoved(this.props.index, newGroup);
@@ -182,21 +193,21 @@ var Group = React.createClass({
         var movedCallback = this.handleValueMoved;
         var dataValues = this.props.data.values;
         var values = dataValues.map(function (v, index) {
-            return Value({data: v, key: "value_" + index});
+            return GroupVals.Value({data: v, key: "value_" + index});
         });
         return React.DOM.div({className: 'group'},
             React.DOM.h2(null, this.props.data.name),
             React.DOM.div({className: 'values'},
-                List({onListItemDeleted: deletedCallback,
+                GroupVals.List({onListItemDeleted: deletedCallback,
                     onListItemMoved: movedCallback,
                     data: dataValues}, values),
-                ListItemAdder({onListItemAdded: addedCallback})
+                GroupVals.ListItemAdder({onListItemAdded: addedCallback})
             ));
     }
 });
 
 
-var GroupsAndValues = React.createClass({
+GroupVals.GroupsAndValues = React.createClass({
     displayName: 'GroupsAndValues',
     getInitialState: function () {
         return {
@@ -237,7 +248,9 @@ var GroupsAndValues = React.createClass({
 
     handleGroupValueMoved: function (index, newGroup) {
         var groups = this.state.data;
-        var newGroups = React.addons.update(groups, {$splice: [[index, 1, newGroup] ]});
+        var newGroups = React.addons.update(groups, {$splice: [
+            [index, 1, newGroup]
+        ]});
         this.setState({data: newGroups});
     },
 
@@ -268,7 +281,7 @@ var GroupsAndValues = React.createClass({
         var groupMovedCallback = this.handleGroupMoved;
         var groups = this.state.data;
         var items = groups.map(function (group, index) {
-            return Group(
+            return GroupVals.Group(
                 {data: group,
                     index: index,
                     key: "group_" + group.groupId,
@@ -277,10 +290,10 @@ var GroupsAndValues = React.createClass({
                     onGroupValueDeleted: groupValueDeletedCallback});
         });
         return React.DOM.div({className: 'groupsAndValues'},
-            List({data: groups,
+            GroupVals.List({data: groups,
                 onListItemDeleted: groupDeletedCallback,
                 onListItemMoved: groupMovedCallback}, items),
-            ListItemAdder({onListItemAdded: addGroupCallback})
+            GroupVals.ListItemAdder({onListItemAdded: addGroupCallback})
         );
     }
 });
@@ -311,7 +324,7 @@ function renderGroupsAndValues(dom_id) {
                 {valueId: 9, text: 'Appear.in'}
             ]}
     ];
-    React.renderComponent(GroupsAndValues({data: data}), target_div);
+    React.renderComponent(GroupVals.GroupsAndValues({data: data}), target_div);
 }
 
 
