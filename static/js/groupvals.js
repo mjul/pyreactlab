@@ -46,7 +46,7 @@ GroupVals.ListItem = React.createClass({
             React.DOM.div({className: 'listItemChildren'}, this.props.children),
             React.DOM.div({className: 'listItemControls'},
                 React.DOM.button({className: 'moveUp', onClick: onUp}, 'Up'),
-                React.DOM.button({className: 'moveUp', onClick: onDown}, 'Down'),
+                React.DOM.button({className: 'moveDown', onClick: onDown}, 'Down'),
                 React.DOM.button({className: 'delete', onClick: onDelete}, 'Delete')
             ));
     }
