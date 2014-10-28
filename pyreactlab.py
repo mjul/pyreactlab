@@ -16,5 +16,11 @@ def list():
 def groups_and_values():
     return render_template('groupvals.html')
 
+@app.route('/kinetic')
+def kinetic():
+    return render_template('kinetic.html')
+
+
+
 if __name__ == '__main__':
     app.run(port=5001)
