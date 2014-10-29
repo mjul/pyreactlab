@@ -20,6 +20,9 @@ def groups_and_values():
 def kinetic():
     return render_template('kinetic.html')
 
+@app.route('/dragdrop')
+def dragdrop():
+    return render_template('dragdrop.html')
 
 
 if __name__ == '__main__':
